@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
+
+    <title>Review Store</title>
+</head>
+
+<body>
+
+    <div id="results" hidden>
+
+    </div>
+
+    <script>
+
+
+
+        function dataURItoBlob(dataURI) {
+            var binary = atob(dataURI.split(',')[1]);
+            var array = [];
+            for (var i = 0; i < binary.length; i++) {
+                array.push(binary.charCodeAt(i));
+            }
+            return new Blob([new Uint8Array(array)], { type: 'image/jpeg' });
+        }
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        function dataURItoBlob(dataURI) {
+            // convert base64/URLEncoded data component to raw binary data held in a string
+            var byteString;
+            if (dataURI.split(',')[0].indexOf('base64') >= 0)
+                byteString = atob(dataURI.split(',')[1]);
+            else
+                byteString = unescape(dataURI.split(',')[1]);
+
+            // separate out the mime component
+            var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+            // write the bytes of the string to a typed array
+            var ia = new Uint8Array(byteString.length);
+            for (var i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+
+            return new Blob([ia], { type: mimeString });
+        }
+
+        function happyfunc(id, feeling) {
+            if (window.counter > 0) {
+                alert("Please wait for the few seconds");
+                return;
+            }
+            Webcam.snap(function (data_uri) {
+
+                var blob = dataURItoBlob(data_uri);
+                var formData = new FormData();
+                formData.append('image', blob, 'image.jpeg');
+                formData.append('store_id', id);
+                formData.append('review', feeling);
+                $.ajax({
+                    url: '/review_store/ajax/',
+                    type: 'POST',
+                    data: formData,
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+
+
+                    processData: false,
+                    contentType: false,
+                    success: function (data) {
+                        console.log(data);
+                        if (data.success) {
+                            alert("Thanks for submitting your review!");
+                            location.reload();
+                        } else {
+                            alert('Something went wrong')
+                        }
+
+                    }
+                });
+
+
+
+
+
+            });
+        }
+
+
+
+
+
+
+
+
+
+
+        $(document).ready(function () {
+            window.counter = 10;
+
+            var interval = setInterval(function () {
+                window.counter--;
+                if (window.counter <= 0) {
+                    clearInterval(interval);
+                    $('#timer').text("");
+                } else {
+                    $('#timer').text(window.counter);
+                    console.log("Timer --> " + window.counter);
+                }
+            }, 1000);
+            Webcam.set({
+                width: 320,
+                height: 240,
+                image_format: 'jpeg',
+                jpeg_quality: 90
+            });
+            Webcam.attach('#my_camera');
+
+
+
+
+        })
+    </script>
+    <div id="my_camera" hidden>
+
+    </div>
+    <div class="container" style="">
+        <p id="timer" style="position: fixed; bottom: 0; left: 50%; "></p>
+
+
+        <div class="review-container  d-flex flex-column justify-content-center ">
+            <div class="text-center " style="margin-bottom: 100px;">
+
+                {% if s.logo %}
+                <img src="{{s.logo.url}}" style="width: 400px;">
+                {% else %}
+                <h1 style="font-size: 50px; font-weight: 800; color: #111827;">
+                    {{s.name}}
+                </h1>
+                {% endif %}
+
+                <h3 class="mt-4" style="color: #111827;">Please rate our service</h3>
+            </div>
+            <style>
+                .review-container {
+                        margin-top: 200px;
+                    }
+                @media screen and (max-width: 768px) {
+                    .review-container {
+                        margin-top: 100px;
+                    }
+                    
+                    .mobile {
+                        flex-direction: column;
+                    }
+
+
+                    .mobile-item {
+                        margin-bottom: 20px;
+                    }
+
+                }
+            </style>
+
+            <div class="d-flex mobile    align-items-center  justify-content-around" style="margin-bottom: 100px;">
+                <div class="mobile-item">
+                    <img class="" src="/static/assets/happiest.png" id="{{s.id}}" style="cursor: pointer;"
+                        onclick="happyfunc(this.id, 'happy')" width="200px" alt="happyface">
+
+                </div>
+                <div class="mobile-item">
+
+                    <img src="/static/assets/satisfied.png" id="{{s.id}}" style="cursor: pointer;"
+                        onclick="happyfunc(this.id, 'satisfied')" width="200px" alt="happyface">
+
+                </div class="mobile-item">
+                <div class="mobile-item">
+
+                    <img src="/static/assets/neutral.png" id="{{s.id}}" style="cursor: pointer;"
+                        onclick="happyfunc(this.id, 'neutral')" width="200px" alt="happyface">
+
+                </div>
+                <div class="mobile-item">
+
+                    <img src="/static/assets/sad.png" id="{{s.id}}" style="cursor: pointer;"
+                        onclick="happyfunc(this.id, 'sad')" width="200px" alt="happyface">
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+    <!-- Optional JavaScript; choose one of the two! -->
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+
+</body>
+
+</html>
